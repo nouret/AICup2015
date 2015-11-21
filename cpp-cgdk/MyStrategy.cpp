@@ -22,34 +22,69 @@ void MyStrategy::move(const Car& self, const World& world, const Game& game, Mov
 }
 */
 void MyStrategy::move(const Car& self, const World& world, const Game& game, Move& move) {
+    vector<vector<int> > Waypoints = world.getWaypoints();
+
+    Waypoints[(self.getNextWaypointIndex() + 1) % (int) Waypoints.size()];
+
     double nextWaypointX = (self.getNextWaypointX() + 0.5) * game.getTrackTileSize();
     double nextWaypointY = (self.getNextWaypointY() + 0.5) * game.getTrackTileSize();
     double angleToWaypoint = self.getAngleTo(nextWaypointX, nextWaypointY);
     double speedModule = hypot(self.getSpeedX(), self.getSpeedY());
-    if (world.getTick() % 20 == 0){
-    	X_10timesago = self.getX();
-    	Y_10timesago = self.getY();
+    sum_speed += speedModule;
+    add = max(0, add - 1);
+    sum_speed -= last_speed[0];
+    for (int i = 0; i < 4; ++i){
+        last_speed[i] = last_speed[i + 1];
     }
-    if (world.getTick() % 20 >= 15){
-    	if (self.getDistanceTo(X_10timesago, Y_10timesago) < game.getTrackTileSize() * 0.1){
-    		move.setWheelTurn(-1 * angleToWaypoint * 10 / PI);
-    		move.setEnginePower(-1.0);
-    		return;
-    	}
+    last_speed[4] = speedModule;
+
+    if (world.getTick() > 50 && world.getTick() % 50 == 0 && sum_speed + add < 1){
+        back = not back;
+        add = 20;
+    }
+
+    if (back){
+    	move.setWheelTurn(-1 * angleToWaypoint * 10 / PI);
+    	move.setEnginePower(-1.0);
+    	return;
     }
     move.setWheelTurn(angleToWaypoint * 10 / PI);
     if (angleToWaypoint < 0.3){
     	move.setEnginePower(2.0);
+        move.setUseNitro(true);
     }
     else{
     	move.setEnginePower(0.5);
     }
     //move.setEnginePower(1.0);
-    if (speedModule * speedModule * abs(angleToWaypoint) > 2.5 * 2.5 * PI) {
+    if (speedModule * speedModule * abs(angleToWaypoint) > 2 * 2 * PI) {
         move.setBrake(true);
+    }
+
+    vector<Car> exterminate = world.getCars();
+    Car now_car;
+    for (int i = 0; i < 4; ++i){
+        now_car = exterminate[i];
+        if (now_car.isTeammate()){
+            continue;
+        }
+        if (self.getDistanceTo(now_car) < game.getTrackTileSize()){
+            if (self.getAngleTo(now_car) < 0.3){
+                move.setThrowProjectile(true);
+            }
+        }
+    }
+
+    if (world.getTick() > game.getInitialFreezeDurationTicks()) {
+        move.setSpillOil(true);
+        //move.setThrowProjectile(true);
     }
 }
 
 MyStrategy::MyStrategy() {
-	_time = 0;
+	back = false;
+    add = 0;
+    for (int i = 0; i < 10; ++i){
+        last_speed[i] = 0;
+    }
 }

@@ -7,9 +7,10 @@
 
 class MyStrategy : public Strategy {
 public:
-	int _time;
-	double X_10timesago;
-	double Y_10timesago;
+	bool back;
+	int add;
+	double sum_speed;
+	double last_speed[10];
     MyStrategy();
     void move(const model::Car& self, const model::World& world, const model::Game& game, model::Move& move);
 };
